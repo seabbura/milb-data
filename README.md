@@ -1,1 +1,1 @@
-# milb-statcast-data
+# milb-data
