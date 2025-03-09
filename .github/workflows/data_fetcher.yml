@@ -16,7 +16,9 @@ on:
     # UIから手動実行するためのトリガー
 
 jobs:
+  # テストはPRとpushの場合のみ実行し、スケジュール実行ではスキップ
   test:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     
     steps:
@@ -30,23 +32,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # ディレクトリ内容を確認
-        ls -la
-        # 存在確認
-        if [ -f "requirements.txt" ]; then
-          pip install -r requirements.txt
-        else
-          # ファイルが無い場合は直接インストール
-          pip install pandas requests pytest
-        fi
+        pip install pandas requests pytest
     
     - name: Run tests
       run: |
         pytest test_data_fetcher.py -v
   
-  fetch_data:
-    runs-on: ubuntu-latest
+  # PRとpushの場合に実行するデータ取得ジョブ（テスト後）
+  fetch_data_after_test:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     needs: test
+    runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v3
@@ -59,15 +55,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # ディレクトリ内容を確認
-        ls -la
-        # 存在確認
-        if [ -f "requirements.txt" ]; then
-          pip install -r requirements.txt
-        else
-          # ファイルが無い場合は直接インストール
-          pip install pandas requests pytest
-        fi
+        pip install pandas requests
     
     - name: Fetch data
       run: |
@@ -83,6 +71,40 @@ jobs:
           echo "No changes to commit"
         else
           git commit -m "Update data $(date +'%Y-%m-%d')"
-          # PAT（Personal Access Token）を使用してプッシュ
+          git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:${GITHUB_REF#refs/heads/}
+        fi
+        
+  # スケジュール実行や手動実行の場合に実行するデータ取得ジョブ（テストなし）
+  fetch_data_direct:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas requests
+    
+    - name: Fetch data
+      run: |
+        python data_fetcher.py
+    
+    - name: Commit and push if data changed
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add data/sample_name.json
+        # 変更があった場合のみコミット
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update data $(date +'%Y-%m-%d')"
           git push "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:${GITHUB_REF#refs/heads/}
         fi
