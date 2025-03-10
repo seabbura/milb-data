@@ -12,17 +12,27 @@ def milb_request(start_dt, end_dt):
     data = pd.read_csv(io.StringIO(s.decode('utf-8')))
     return data
 
+
 def main():
     # データディレクトリがなければ作成
     os.makedirs("data", exist_ok=True)
     
     # 既存のデータを読み込む（ファイルが存在しない場合は空のDataFrameを作成）
     try:
-        df_prev = pd.read_json("data/sample_name.json")
-        print(f"Loaded {len(df_prev)} existing records")
+        df_name_prev = pd.read_json("data/sample_name.json")
+        print(f"Loaded {len(df_name_prev)} existing name records")
     except (FileNotFoundError, ValueError):
-        df_prev = pd.DataFrame(columns=["pitcher", "player_name", "p_throws"])
-        print("No existing data found or file is empty. Starting fresh.")
+        df_name_prev = pd.DataFrame(columns=["pitcher", "player_name", "p_throws"])
+        print("No existing name data found or file is empty. Starting fresh.")
+        
+    try:
+        df_ext_prev = pd.read_json("data/sample_ext.json")
+        print(f"Loaded {len(df_ext_prev)} existing ext records")
+    except (FileNotFoundError, ValueError):
+        df_ext_prev = pd.DataFrame(columns=["pitcher", "pitch_type", "p_throws", "stand", "pfx_x", "pfx_z", 
+                                           "release_speed", "release_spin_rate", "description", "spin_axis", 
+                                           "plate_x", "plate_z", "balls", "strikes"])
+        print("No existing ext data found or file is empty. Starting fresh.")
     
     # 開始日と終了日をdatetime.date型で設定
     start_date = datetime.date(2025, 2, 20)
@@ -63,22 +73,51 @@ def main():
         columns_to_check = ['release_speed', 'release_pos_x', 'release_pos_z', 'pfx_x', 'pfx_z', 'plate_x', 'plate_z']
         df_total_chk = df_total_chk[~df_total_chk[columns_to_check].isna().any(axis=1)]
         
-        # データの抽出
-        df_total_chk = df_total_chk[["pitcher", "player_name", "p_throws"]]
+        ### name部分のデータ処理 ###
+        # データの抽出 (name)
+        df_name_chk = df_total_chk[["pitcher", "player_name", "p_throws"]]
         
-        # 既存データと新しいデータを結合（正しいconcat構文を使用）
-        df_combined = pd.concat([df_prev, df_total_chk], ignore_index=True)
+        # 既存データと新しいデータを結合
+        df_name_combined = pd.concat([df_name_prev, df_name_chk], ignore_index=True)
         
         # 重複を削除（最新のデータを保持）
-        df_combined = df_combined.drop_duplicates(subset=["pitcher"], keep="last")
-        
-        print(f"Added {len(df_combined) - len(df_prev)} new unique records")
+        df_name_combined = df_name_combined.drop_duplicates(subset=["pitcher"], keep="last")
+        print(f"Added {len(df_name_combined) - len(df_name_prev)} new unique name records")
         
         # エクスポート
-        df_combined.to_json("data/sample_name.json", orient="records")
+        df_name_combined.to_json("data/sample_name.json", orient="records")
         print("Data exported successfully to data/sample_name.json")
+        
+        ### ext部分のデータ処理 ###
+        # データの抽出 (ext)
+        ext_columns = ["pitcher", "pitch_type", "p_throws", "stand", "pfx_x", "pfx_z", 
+                      "release_speed", "release_spin_rate", "description", "spin_axis", 
+                      "plate_x", "plate_z", "balls", "strikes"]
+        
+        # 必要なカラムが存在するか確認
+        existing_columns = set(df_total_chk.columns)
+        required_columns = set(ext_columns)
+        missing_columns = required_columns - existing_columns
+        
+        if missing_columns:
+            print(f"Warning: Missing columns in data: {missing_columns}")
+            # 存在するカラムのみで処理
+            valid_columns = [col for col in ext_columns if col in existing_columns]
+            df_ext_chk = df_total_chk[valid_columns]
+        else:
+            df_ext_chk = df_total_chk[ext_columns]
+        
+        # 既存データと新しいデータを結合
+        df_ext_combined = pd.concat([df_ext_prev, df_ext_chk], ignore_index=True)
+        
+        # エクスポート
+        df_ext_combined.to_json("data/sample_ext.json", orient="records")
+        print(f"Added {len(df_ext_combined) - len(df_ext_prev)} new ext records")
+        print("Data exported successfully to data/sample_ext.json")
+        
     else:
-        print("No new data to add. Keeping the existing data file.")
+        print("No new data to add. Keeping the existing data files.")
+
 
 if __name__ == "__main__":
     main()
