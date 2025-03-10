@@ -18,8 +18,8 @@ def main():
     os.makedirs("data/milb_2025", exist_ok=True)
     
     # 保存先のパス設定
-    name_file_path = "data/milb_2025/sample_name.json"
-    ext_file_path = "data/milb_2025/sample_ext.json"
+    name_file_path = "data/milb_2025/df_milb_2025_name.json"
+    ext_file_path = "data/milb_2025/df_milb_2025_ext.json"
     
     # 既存のデータを読み込む（ファイルが存在しない場合は空のDataFrameを作成）
     try:
@@ -40,7 +40,8 @@ def main():
     
     # 日付範囲を「本日の2日前から本日まで」に設定
     today = datetime.date.today()
-    start_date = today - datetime.timedelta(days=2)
+    # start_date = today - datetime.timedelta(days=2)
+    start_date = datetime.date(2025, 2, 20)
     end_date = today
     
     print(f"Date range: {start_date} to {end_date}")
