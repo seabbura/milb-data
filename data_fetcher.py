@@ -14,19 +14,23 @@ def milb_request(start_dt, end_dt):
 
 
 def main():
-    # データディレクトリがなければ作成
-    os.makedirs("data", exist_ok=True)
+    # "data/milb_2025" ディレクトリがなければ作成
+    os.makedirs("data/milb_2025", exist_ok=True)
+    
+    # 保存先のパス設定
+    name_file_path = "data/milb_2025/sample_name.json"
+    ext_file_path = "data/milb_2025/sample_ext.json"
     
     # 既存のデータを読み込む（ファイルが存在しない場合は空のDataFrameを作成）
     try:
-        df_name_prev = pd.read_json("data/sample_name.json")
+        df_name_prev = pd.read_json(name_file_path)
         print(f"Loaded {len(df_name_prev)} existing name records")
     except (FileNotFoundError, ValueError):
         df_name_prev = pd.DataFrame(columns=["pitcher", "player_name", "p_throws"])
         print("No existing name data found or file is empty. Starting fresh.")
         
     try:
-        df_ext_prev = pd.read_json("data/sample_ext.json")
+        df_ext_prev = pd.read_json(ext_file_path)
         print(f"Loaded {len(df_ext_prev)} existing ext records")
     except (FileNotFoundError, ValueError):
         df_ext_prev = pd.DataFrame(columns=["pitcher", "pitch_type", "p_throws", "stand", "pfx_x", "pfx_z", 
@@ -34,9 +38,12 @@ def main():
                                            "plate_x", "plate_z", "balls", "strikes"])
         print("No existing ext data found or file is empty. Starting fresh.")
     
-    # 開始日と終了日をdatetime.date型で設定
-    start_date = datetime.date(2025, 2, 20)
-    end_date = datetime.date(2025, 2, 21)
+    # 日付範囲を「本日の2日前から本日まで」に設定
+    today = datetime.date.today()
+    start_date = today - datetime.timedelta(days=2)
+    end_date = today
+    
+    print(f"Date range: {start_date} to {end_date}")
     
     # 各日のデータを格納するためのリスト
     df_list = []
@@ -85,8 +92,8 @@ def main():
         print(f"Added {len(df_name_combined) - len(df_name_prev)} new unique name records")
         
         # エクスポート
-        df_name_combined.to_json("data/sample_name.json", orient="records")
-        print("Data exported successfully to data/sample_name.json")
+        df_name_combined.to_json(name_file_path, orient="records")
+        print(f"Data exported successfully to {name_file_path}")
         
         ### ext部分のデータ処理 ###
         # データの抽出 (ext)
@@ -111,9 +118,9 @@ def main():
         df_ext_combined = pd.concat([df_ext_prev, df_ext_chk], ignore_index=True)
         
         # エクスポート
-        df_ext_combined.to_json("data/sample_ext.json", orient="records")
+        df_ext_combined.to_json(ext_file_path, orient="records")
         print(f"Added {len(df_ext_combined) - len(df_ext_prev)} new ext records")
-        print("Data exported successfully to data/sample_ext.json")
+        print(f"Data exported successfully to {ext_file_path}")
         
     else:
         print("No new data to add. Keeping the existing data files.")
