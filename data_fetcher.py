@@ -25,8 +25,8 @@ def main():
         print("No existing data found or file is empty. Starting fresh.")
     
     # 開始日と終了日をdatetime.date型で設定
-    start_date = datetime.date(2025, 2, 22)
-    end_date = datetime.date(2025, 2, 23)
+    start_date = datetime.date(2025, 2, 20)
+    end_date = datetime.date(2025, 3, 10)
     
     # 各日のデータを格納するためのリスト
     df_list = []
