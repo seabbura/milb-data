@@ -36,7 +36,7 @@ def main():
     
     # 開始日と終了日をdatetime.date型で設定
     start_date = datetime.date(2025, 2, 20)
-    end_date = datetime.date(2025, 3, 10)
+    end_date = datetime.date(2025, 2, 21)
     
     # 各日のデータを格納するためのリスト
     df_list = []
